@@ -61,6 +61,9 @@ func p(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		if len(files) == 0{
+			return
+		}
 		rand.Seed(time.Now().UnixNano())
 		uid = files[rand.Intn(len(files))].Name()
 	}
@@ -92,13 +95,6 @@ func p(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-
-	rds = redis.NewClient(&redis.Options{Addr: rdsAddr, DB: rdsDb})
-	_, err := rds.Ping().Result()
-	if err != nil {
-		fmt.Println(err)
-	}
-
 	ph, err := os.Getwd()
 	if err != nil {
 		fmt.Println(err)
@@ -106,6 +102,27 @@ func main() {
 	}
 
 	photoPath = path.Join(ph, photoFolder)
+
+	if isExist(photoPath) == false {
+		err := os.Mkdir(photoPath,0777)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		err = os.Chmod(photoPath,0777)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+
+
+	rds = redis.NewClient(&redis.Options{Addr: rdsAddr, DB: rdsDb})
+	_, err = rds.Ping().Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 
 	http.Handle("/", http.RedirectHandler("/p", 302))
 	http.Handle("/favicon.ico", http.NotFoundHandler())
